@@ -1,12 +1,12 @@
 from crunge import imgui
 from crunge.engine import App
-from crunge.demo import Page, PageChannel
+from cxview import Page, PageChannel
 
 
 class Index(Page):
     def _draw(self):
         imgui.begin("Index")
-        imgui.text("Welcome to the CxView Demo!")
+        imgui.text("Welcome to CxView!")
         imgui.end()
         super()._draw()
 
