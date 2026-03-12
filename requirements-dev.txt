@@ -1,0 +1,10 @@
+-e ../crunge/pkg/core
+-e ../crunge/pkg/imgui
+-e ../crunge/pkg/imnodes
+-e ../crunge/pkg/wgpu
+-e ../crunge/pkg/skia
+-e ../crunge/pkg/yoga
+-e ../crunge/pkg/sdl
+-e ../crunge/pkg/engine
+-e ../crunge/pkg/demo
+
