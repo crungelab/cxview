@@ -4,6 +4,7 @@ from contextvars import ContextVar
 from loguru import logger
 
 from crunge import imgui, imnodes
+from crunge.engine.imgui.widget import Widget
 
 from .pin import Pin
 from .wire import Wire
@@ -14,10 +15,10 @@ if TYPE_CHECKING:
 current_graph: ContextVar[Optional["Graph"]] = ContextVar("current_graph", default=None)
 
 
-class Graph:
+class Graph(Widget):
     def __init__(self):
-        self.nodes: list[Node] = []
-        self.node_map: dict[int, Node] = {}
+        super().__init__()
+
         self.wires: list[Wire] = []
         self.wire_map: dict[int, Wire] = {}
         self.pins: list[Pin] = []
@@ -30,18 +31,16 @@ class Graph:
     def get_current(cls) -> Optional["Graph"]:
         return current_graph.get()
 
-    def reset(self):
-        for node in self.nodes:
-            node.reset()
-
+    @property
+    def nodes(self) -> list["Node"]:
+        return self.children
+    
     def add_node(self, node: "Node"):
-        self.nodes.append(node)
-        self.node_map[node.id] = node
+        self.add_child(node)
         return node
 
     def remove_node(self, node: "Node"):
-        self.nodes.remove(node)
-        self.node_map.pop(node.id)
+        self.remove_child(node)
 
     def add_wire(self, wire: Wire):
         self.wires.append(wire)
@@ -67,17 +66,12 @@ class Graph:
     def disconnect(self, wire: Wire):
         self.remove_wire(wire)
 
-    def update(self, delta_time: float):
-        for node in self.nodes:
-            node.update(delta_time)
-
-    def draw(self):
-        imgui.begin("Node Editor")
-
+    def _begin(self):
         imnodes.begin_node_editor()
 
-        for node in self.nodes:
-            node.draw()
+    def _draw(self):
+        super()._draw()
+    
         for wire in self.wires:
             wire.draw()
 
@@ -89,6 +83,10 @@ class Graph:
         # imnodes.mini_map(0.1, imnodes.MiniMapLocation.TOP_LEFT, cb, cb_data)
         imnodes.mini_map(0.1, imnodes.MiniMapLocation.TOP_RIGHT, cb, cb_data)
         # imnodes.mini_map()
+        #imnodes.end_node_editor()
+
+
+    def _end(self):
         imnodes.end_node_editor()
 
         if (result := imnodes.is_link_created(0, 0))[0]:
@@ -103,5 +101,3 @@ class Graph:
             wire = self.wire_map[result[1]]
             logger.debug(f"destroyed: {wire}")
             self.disconnect(wire)
-
-        imgui.end()

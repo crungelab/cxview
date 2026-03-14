@@ -45,14 +45,14 @@ class Page(ImGuiView):
             y = 32
             height = (self.window.height - 32 - 16) / 2
 
-        imgui.set_next_window_pos((x, y), imgui.Cond.ONCE)
-        imgui.set_next_window_size((width, height), imgui.Cond.ONCE)
+        imgui.set_next_window_pos((x, y), imgui.Cond.FIRST_USE_EVER)
+        imgui.set_next_window_size((width, height), imgui.Cond.FIRST_USE_EVER)
 
         super()._draw()
 
     def draw_navbar(self):
-        imgui.set_next_window_pos((self.window.width - 256 - 16, 32), imgui.Cond.ONCE)
-        imgui.set_next_window_size((256, self.window.height - 32 - 16), imgui.Cond.ONCE)
+        imgui.set_next_window_pos((self.window.width - 256 - 16, 32), imgui.Cond.FIRST_USE_EVER)
+        imgui.set_next_window_size((256, self.window.height - 32 - 16), imgui.Cond.FIRST_USE_EVER)
 
         flags = imgui.WindowFlags.MENU_BAR if self.window.menubar_location == MenubarLocation.NAVBAR else imgui.WindowFlags.NONE
         imgui.begin("Examples", flags=flags)

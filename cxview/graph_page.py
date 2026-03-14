@@ -1,3 +1,5 @@
+from crunge.engine.imgui.widget import Dock
+
 from .page import Page
 from .graph import Graph
 
@@ -10,6 +12,11 @@ class GraphPage(Page):
         self.dragged = None
         self.graph = Graph()
         self.graph.make_current()
+
+    def _create(self):
+        super()._create()
+        self.graph_dock = Dock("Graph", [self.graph])
+        self.gui.add_child(self.graph_dock)
 
     @property
     def session(self):
@@ -27,10 +34,4 @@ class GraphPage(Page):
         return dragged
 
     def update(self, delta_time):
-        # self.graph.update(delta_time)
         self.session.update(delta_time)
-
-    def _draw(self):
-        self.graph.draw()
-
-        super()._draw()

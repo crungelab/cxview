@@ -5,6 +5,7 @@ from loguru import logger
 
 from crunge import imgui
 from crunge import imnodes
+from crunge.engine.imgui.widget import Widget
 
 from .wire import Wire
 
@@ -12,10 +13,11 @@ from .pin import Pin, Input, Output, TogglePin
 from .session import Session
 from .graph import Graph
 
-class Node:
+class Node(Widget):
     id_counter = 0
 
     def __init__(self, name: str):
+        super().__init__()
         self.id = Node.id_counter
         Node.id_counter += 1
         self.name = name
@@ -55,11 +57,8 @@ class Node:
     def update(self, delta_time: float):
         pass
 
-    def draw(self):
-        self.begin()
-        self.end()
 
-    def begin(self):
+    def _begin(self):
         imnodes.begin_node(self.id)
         imnodes.begin_node_title_bar()
         # with self.inputs[0].drawing():
@@ -67,7 +66,7 @@ class Node:
             imgui.text(self.title)
         imnodes.end_node_title_bar()
 
-    def end(self):
+    def _end(self):
         # for pin in self.pins:
         for pin in self.outputs:
             pin.draw()
@@ -124,8 +123,8 @@ class TypeNode(ClangNode):
         super().__init__(name)
         self.type = type
 
-    def begin(self):
-        super().begin()
+    def _begin(self):
+        super()._begin()
         imgui.text(self.type.spelling)
 
 
@@ -236,10 +235,6 @@ class CursorNode(ClangNode):
 
         logger.debug(f"Hiding children after: {self.graph.nodes}")
     """
-
-    def begin(self):
-        super().begin()
-        # imgui.text(self.cursor.spelling)
 
 
 class RootNode(CursorNode):
