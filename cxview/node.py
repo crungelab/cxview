@@ -10,7 +10,7 @@ from .wire import Wire
 
 from .pin import Pin, Input, Output, TogglePin
 from .session import Session
-
+from .graph import Graph
 
 class Node:
     id_counter = 0
@@ -24,6 +24,18 @@ class Node:
         self.inputs: list[Input] = []
         self.outputs: list[Output] = []
         self.pin_map: dict[str, Pin] = {}
+
+    @property
+    def title(self):
+        return self.name
+
+    @property
+    def session(self):
+        return Session.get_current()
+
+    @property
+    def graph(self):
+        return Graph.get_current()
 
     def reset(self):
         pass
@@ -61,23 +73,8 @@ class Node:
             pin.draw()
         imnodes.end_node()
 
-    @property
-    def title(self):
-        return self.name
-
-    @property
-    def session(self):
-        return Session.get_current()
-
-    @property
-    def graph(self):
-        return self.session.graph
-
     def queue_action(self, action: Callable[[], None]):
         self.session.queue_action(action)
-
-    def queue_deferred_action(self, action: Callable[[], None]):
-        self.session.queue_deferred_action(action)
 
     def place_node_right_of(
         self, node: "Node", gap_x: float = 40.0, gap_y: float = 0.0

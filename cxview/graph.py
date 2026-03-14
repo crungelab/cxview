@@ -1,3 +1,6 @@
+from typing import TYPE_CHECKING, Optional
+from contextvars import ContextVar
+
 from loguru import logger
 
 from crunge import imgui, imnodes
@@ -5,26 +8,38 @@ from crunge import imgui, imnodes
 from .pin import Pin
 from .wire import Wire
 
+if TYPE_CHECKING:
+    from .node import Node
+
+current_graph: ContextVar[Optional["Graph"]] = ContextVar("current_graph", default=None)
+
 
 class Graph:
     def __init__(self):
-        self.nodes = []
-        self.node_map = {}
-        self.wires = []
-        self.wire_map = {}
-        self.pins = []
-        self.pin_map = {}
+        self.nodes: list[Node] = []
+        self.node_map: dict[int, Node] = {}
+        self.wires: list[Wire] = []
+        self.wire_map: dict[int, Wire] = {}
+        self.pins: list[Pin] = []
+        self.pin_map: dict[int, Pin] = {}
+
+    def make_current(self):
+        current_graph.set(self)
+
+    @classmethod
+    def get_current(cls) -> Optional["Graph"]:
+        return current_graph.get()
 
     def reset(self):
         for node in self.nodes:
             node.reset()
 
-    def add_node(self, node):
+    def add_node(self, node: "Node"):
         self.nodes.append(node)
         self.node_map[node.id] = node
         return node
 
-    def remove_node(self, node):
+    def remove_node(self, node: "Node"):
         self.nodes.remove(node)
         self.node_map.pop(node.id)
 
@@ -37,11 +52,11 @@ class Graph:
         self.wires.remove(wire)
         self.wire_map.pop(wire.id)
 
-    def add_pin(self, pin):
+    def add_pin(self, pin: Pin):
         self.pins.append(pin)
         self.pin_map[pin.id] = pin
 
-    def remove_pin(self, pin):
+    def remove_pin(self, pin: Pin):
         pin.destroy()
         self.pins.remove(pin)
         self.pin_map.pop(pin.id)
@@ -71,7 +86,7 @@ class Graph:
             pass
 
         cb_data = True
-        #imnodes.mini_map(0.1, imnodes.MiniMapLocation.TOP_LEFT, cb, cb_data)
+        # imnodes.mini_map(0.1, imnodes.MiniMapLocation.TOP_LEFT, cb, cb_data)
         imnodes.mini_map(0.1, imnodes.MiniMapLocation.TOP_RIGHT, cb, cb_data)
         # imnodes.mini_map()
         imnodes.end_node_editor()

@@ -1,13 +1,11 @@
 from typing import TYPE_CHECKING, Optional, Type, Dict, List, Any, Callable
 import contextlib
 from contextvars import ContextVar
-import re
 from pathlib import Path
 
 from clang import cindex
 from loguru import logger
 
-from .graph import Graph
 
 current_session: ContextVar[Optional["Session"]] = ContextVar(
     "current_session", default=None
@@ -18,9 +16,7 @@ class Session:
     def __init__(self, cursor: cindex.Cursor, path: Path) -> None:
         self.cursor = cursor
         self.path = path
-        self.graph = Graph()
         self.action_queue = []
-        self.deferred_action_queue = []
 
     def make_current(self):
         current_session.set(self)
@@ -32,16 +28,10 @@ class Session:
     def queue_action(self, action: Callable[[], None]):
         self.action_queue.append(action)
 
-    def queue_deferred_action(self, action: Callable[[], None]):
-        self.deferred_action_queue.append(action)
-
     def update(self, delta_time):
         while self.action_queue:
             action = self.action_queue.pop(0)
             action()
-        self.action_queue = self.deferred_action_queue
-        self.deferred_action_queue = []
-        self.graph.update(delta_time)
 
     def is_mappable(self, cursor: cindex.Cursor):
         return self.path == Path(cursor.location.file.name)
