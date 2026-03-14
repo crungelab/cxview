@@ -8,6 +8,7 @@ from crunge.engine.imgui.widget import Widget
 
 from .pin import Pin
 from .wire import Wire
+from .session import Session
 
 if TYPE_CHECKING:
     from .node import Node
@@ -33,6 +34,10 @@ class Graph(Widget):
     @classmethod
     def get_current(cls) -> Optional["Graph"]:
         return current_graph.get()
+
+    @property
+    def session(self):
+        return Session.get_current()
 
     @property
     def nodes(self) -> list["Node"]:
@@ -67,6 +72,8 @@ class Graph(Widget):
         self.add_wire(Wire(output, input))
 
     def disconnect(self, wire: Wire):
+        input_node = wire.input.node
+        self.remove_node(input_node)
         self.remove_wire(wire)
 
     def _begin(self):
@@ -90,6 +97,16 @@ class Graph(Widget):
 
     def _end(self):
         imnodes.end_node_editor()
+
+        if (result := imnodes.is_link_dropped(0, False))[0]:
+            output = self.pin_map[result[1]]
+            logger.debug(f"dropped: {output}")
+            output.toggle()
+            """
+            def action():
+                output.toggle()
+            self.session.queue_action(action)
+            """
 
         if (result := imnodes.is_link_created(0, 0))[0]:
             logger.debug(result)

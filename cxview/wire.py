@@ -1,8 +1,10 @@
-from crunge import imgui, imnodes
+from crunge import imnodes
+
+from .pin import Output, Input
 
 class Wire:
     id_counter = 0
-    def __init__(self, output, input):
+    def __init__(self, output: Output, input: Input):
         self.id = Wire.id_counter
         Wire.id_counter += 1
         self.input = input

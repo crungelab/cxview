@@ -71,9 +71,10 @@ class Node(Widget):
         imnodes.end_node_title_bar()
 
     def _end(self):
-        # for pin in self.pins:
+        """
         for pin in self.outputs:
             pin.draw()
+        """
         imnodes.end_node()
 
     def queue_action(self, action: Callable[[], None]):
@@ -94,7 +95,7 @@ class TypeNode(ClangNode):
 
     def _begin(self):
         super()._begin()
-        imgui.text(self.type.spelling)
+        imgui.text(str(self.type.kind))
 
 
 class CursorNode(ClangNode):
@@ -108,7 +109,12 @@ class CursorNode(ClangNode):
 
     @property
     def title(self):
-        return f"{self.name} ({self.cursor.spelling})"
+        # return f"{self.name} ({self.cursor.spelling})"
+        return self.cursor.spelling
+
+    def _begin(self):
+        super()._begin()
+        imgui.text(str(self.cursor.kind))
 
 
 class RootNode(CursorNode):
