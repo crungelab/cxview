@@ -2,6 +2,7 @@ from loguru import logger
 
 from crunge import imgui, imnodes
 
+from .pin import Pin
 from .wire import Wire
 
 
@@ -27,11 +28,11 @@ class Graph:
         self.nodes.remove(node)
         self.node_map.pop(node.id)
 
-    def add_wire(self, wire):
+    def add_wire(self, wire: Wire):
         self.wires.append(wire)
         self.wire_map[wire.id] = wire
 
-    def remove_wire(self, wire):
+    def remove_wire(self, wire: Wire):
         wire.destroy()
         self.wires.remove(wire)
         self.wire_map.pop(wire.id)
@@ -45,13 +46,13 @@ class Graph:
         self.pins.remove(pin)
         self.pin_map.pop(pin.id)
 
-    def connect(self, output, input):
+    def connect(self, output: Pin, input: Pin):
         self.add_wire(Wire(output, input))
 
-    def disconnect(self, wire):
+    def disconnect(self, wire: Wire):
         self.remove_wire(wire)
 
-    def update(self, delta_time):
+    def update(self, delta_time: float):
         for node in self.nodes:
             node.update(delta_time)
 

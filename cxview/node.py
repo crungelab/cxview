@@ -8,7 +8,7 @@ from crunge import imnodes
 
 from .wire import Wire
 
-from .pin import Pin, Input, Output
+from .pin import Pin, Input, Output, TogglePin
 from .session import Session
 
 
@@ -50,7 +50,8 @@ class Node:
     def begin(self):
         imnodes.begin_node(self.id)
         imnodes.begin_node_title_bar()
-        with self.inputs[0].drawing():
+        # with self.inputs[0].drawing():
+        with self.inputs[0]:
             imgui.text(self.title)
         imnodes.end_node_title_bar()
 
@@ -118,33 +119,33 @@ class Node:
 class ClangNode(Node):
     def __init__(self, name: str):
         super().__init__(name)
-        self.input = Input(self, "parent", self.process)
+        self.parent_pin = Input(self, "parent")
+
+
+class TypeNode(ClangNode):
+    def __init__(self, name: str, type: cindex.Type):
+        super().__init__(name)
+        self.type = type
+
+    def begin(self):
+        super().begin()
+        imgui.text(self.type.spelling)
 
 
 class CursorNode(ClangNode):
     def __init__(self, name: str, cursor: cindex.Cursor):
         super().__init__(name)
         self.cursor = cursor
-        self.children_pin = Output(self, "children", self.process)
+        # self.children_pin = Output(self, "children", self.process)
+        self.type_pin = TogglePin(self, "type", self.toggle_type)
+        self.children_pin = TogglePin(self, "children", self.toggle_children)
 
     @property
     def title(self):
         return f"{self.name} ({self.cursor.spelling})"
 
-    def queue_process(self):
-        self.queue_action(self.process)
-
     """
-    def process(self):
-        for cursor in self.cursor.get_children():
-            node = self.session.create_cursor_node(cursor)
-            if node is not None:
-                self.place_node_right_of(node)
-                self.graph.add_node(node)
-                self.graph.add_wire(Wire(self.get_pin('children'), node.get_pin('parent')))
-    """
-
-    def process(self):
+    def toggle_children(self, value: bool):
         for cursor in self.cursor.get_children():
             node = self.session.create_cursor_node(cursor)
             if node is not None:
@@ -164,7 +165,80 @@ class CursorNode(ClangNode):
 
         self.queue_action(action)
         #self.queue_deferred_action(action)
+    """
 
+    def toggle_type(self, value: bool):
+        if value:
+            self.show_type()
+        else:
+            self.hide_type()
+
+    def show_type(self):
+        typ = self.cursor.type
+        if typ is None:
+            return
+
+        node = self.session.create_type_node(typ)
+        if node is not None:
+            self.place_node_right_of(node)
+            self.graph.add_node(node)
+            self.graph.add_wire(Wire(self.get_pin("type"), node.get_pin("parent")))
+
+    def hide_type(self):
+        pass
+
+    def toggle_children(self, value: bool):
+        if value:
+            self.show_children()
+        else:
+            self.hide_children()
+
+    def show_children(self):
+        for cursor in self.cursor.get_children():
+            node = self.session.create_cursor_node(cursor)
+            if node is not None:
+                self.place_node_right_of(node)
+                self.graph.add_node(node)
+                self.graph.add_wire(
+                    Wire(self.get_pin("children"), node.get_pin("parent"))
+                )
+
+        def action():
+            children = []
+            for wire in self.children_pin.wires:
+                logger.debug(
+                    f"Found child node {wire.input.node.id} for parent {self.id}"
+                )
+                children.append(wire.input.node)
+            self.place_children_right(children)
+
+        self.queue_action(action)
+
+    def hide_children(self):
+        logger.debug(f"Hiding children before: {self.graph.nodes}")
+        # Have to make a copy of the wires list because we'll be modifying it during iteration
+        wires = list(self.children_pin.wires)
+        for wire in wires:
+            logger.debug(f"wire {wire}")
+            logger.debug(f"Hiding child node {wire.input.node.id} of parent {self.id}")
+            child_node = wire.input.node
+            self.graph.remove_node(child_node)
+            self.graph.remove_wire(wire)
+
+        logger.debug(f"Hiding children after: {self.graph.nodes}")
+
+    """
+    def hide_children(self):
+        logger.debug(f"Hiding children before: {self.graph.nodes}")
+        for wire in self.children_pin.wires:
+            logger.debug(f"wire {wire}")
+            logger.debug(f"Hiding child node {wire.input.node.id} of parent {self.id}")
+            child_node = wire.input.node
+            self.graph.remove_node(child_node)
+            self.graph.remove_wire(wire)
+
+        logger.debug(f"Hiding children after: {self.graph.nodes}")
+    """
 
     def begin(self):
         super().begin()
@@ -189,3 +263,8 @@ class TypedefDeclNode(CursorNode):
 class ParmDeclNode(CursorNode):
     def __init__(self, cursor: cindex.Cursor):
         super().__init__("ParmDecl", cursor)
+
+
+class TypeRefNode(CursorNode):
+    def __init__(self, cursor: cindex.Cursor):
+        super().__init__("TypeRef", cursor)

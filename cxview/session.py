@@ -45,11 +45,11 @@ class Session:
 
     def is_mappable(self, cursor: cindex.Cursor):
         return self.path == Path(cursor.location.file.name)
-    
+
     def create_cursor_node(self, cursor: cindex.Cursor):
         if not self.is_mappable(cursor):
             return None
-        from .node import RootNode, FunctionDeclNode, TypedefDeclNode, ParmDeclNode
+        from .node import RootNode, FunctionDeclNode, TypedefDeclNode, ParmDeclNode, TypeRefNode
 
         match cursor.kind:
             case cindex.CursorKind.FUNCTION_DECL:
@@ -60,6 +60,13 @@ class Session:
                 return ParmDeclNode(cursor)
             case cindex.CursorKind.VAR_DECL:
                 return RootNode(cursor)
+            case cindex.CursorKind.TYPE_REF:
+                return TypeRefNode(cursor)
             case _:
                 logger.warning(f"Unhandled cursor kind: {cursor.kind}")
                 return None
+
+    def create_type_node(self, type: cindex.Type):
+        from .node import TypeNode
+        return TypeNode(type.spelling, type)
+
