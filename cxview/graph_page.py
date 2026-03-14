@@ -2,6 +2,7 @@ from crunge.engine.imgui.widget import Dock
 
 from .page import Page
 from .graph import Graph
+from .graph_layout import GraphLayout
 
 from .session import Session
 
@@ -10,7 +11,9 @@ class GraphPage(Page):
     def __init__(self, name: str, title: str):
         super().__init__(name, title)
         self.dragged = None
+        self.graph_layout = GraphLayout()
         self.graph = Graph()
+        self.graph.graph_layout = self.graph_layout
         self.graph.make_current()
 
     def _create(self):

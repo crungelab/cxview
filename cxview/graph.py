@@ -11,6 +11,7 @@ from .wire import Wire
 
 if TYPE_CHECKING:
     from .node import Node
+    from .graph_layout import GraphLayout
 
 current_graph: ContextVar[Optional["Graph"]] = ContextVar("current_graph", default=None)
 
@@ -24,6 +25,8 @@ class Graph(Widget):
         self.pins: list[Pin] = []
         self.pin_map: dict[int, Pin] = {}
 
+        self.graph_layout: "GraphLayout" = None
+
     def make_current(self):
         current_graph.set(self)
 
@@ -34,7 +37,7 @@ class Graph(Widget):
     @property
     def nodes(self) -> list["Node"]:
         return self.children
-    
+
     def add_node(self, node: "Node"):
         self.add_child(node)
         return node
@@ -71,7 +74,7 @@ class Graph(Widget):
 
     def _draw(self):
         super()._draw()
-    
+
         for wire in self.wires:
             wire.draw()
 
@@ -83,8 +86,7 @@ class Graph(Widget):
         # imnodes.mini_map(0.1, imnodes.MiniMapLocation.TOP_LEFT, cb, cb_data)
         imnodes.mini_map(0.1, imnodes.MiniMapLocation.TOP_RIGHT, cb, cb_data)
         # imnodes.mini_map()
-        #imnodes.end_node_editor()
-
+        # imnodes.end_node_editor()
 
     def _end(self):
         imnodes.end_node_editor()

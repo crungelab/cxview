@@ -6,15 +6,14 @@ from crunge import imgui, imnodes
 class Pin:
     id_counter = 0
 
-    def __init__(self, node, name):
+    def __init__(self, name):
         self.id = Pin.id_counter
         Pin.id_counter += 1
-        self.node = node
         self.name = name
+        self.node = None
         self.wires = []
         self.x = 0
         self.y = 0
-        self.node.add_pin(self)
 
     def destroy(self):
         pass
@@ -57,8 +56,8 @@ class Pin:
 
 
 class Input(Pin):
-    def __init__(self, node, name):
-        super().__init__(node, name)
+    def __init__(self, name):
+        super().__init__(name)
 
     def begin(self):
         imnodes.begin_input_attribute(self.id)
@@ -67,25 +66,10 @@ class Input(Pin):
     def end(self):
         imnodes.end_input_attribute()
 
-"""
-class Output(Pin):
-    def __init__(self, node, name, action):
-        super().__init__(node, name)
-        self.action = action
-
-    def begin(self):
-        imnodes.begin_output_attribute(self.id)
-        # imgui.text(self.name)
-        if imgui.button(f"{self.name}##{self.id}"):
-            self.action()
-
-    def end(self):
-        imnodes.end_output_attribute()
-"""
 
 class Output(Pin):
-    def __init__(self, node, name):
-        super().__init__(node, name)
+    def __init__(self, name):
+        super().__init__(name)
 
     def begin(self):
         imnodes.begin_output_attribute(self.id)
@@ -94,8 +78,8 @@ class Output(Pin):
         imnodes.end_output_attribute()
 
 class TogglePin(Output):
-    def __init__(self, node, name, action):
-        super().__init__(node, name)
+    def __init__(self, name, action):
+        super().__init__(name)
         self.action = action
         self.value = False
 
