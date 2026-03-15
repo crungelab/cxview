@@ -15,6 +15,7 @@ from .property import (
     Binding,
     PropertyWidget,
     TypeProperty,
+    CanonicalTypeProperty,
     PointeeProperty,
     DeclarationProperty,
     ChildrenProperty,
@@ -76,6 +77,10 @@ class Node(Widget):
         prop.node = self
         self.add_child(prop)
 
+    def add_properties(self, *props: PropertyWidget):
+        for prop in props:
+            self.add_property(prop)
+
     def add_pin(self, pin: Pin):
         pin.node = self
         self.graph.add_pin(pin)
@@ -125,8 +130,9 @@ class TypeNode(ClangNode):
     def __init__(self, name: str, type: cindex.Type):
         super().__init__(name)
         self.type = type
-        self.add_property(
-            DeclarationProperty(Binding(lambda: self.type.get_declaration()))
+        self.add_properties(
+            CanonicalTypeProperty(Binding(lambda: self.type.get_canonical())),
+            DeclarationProperty(Binding(lambda: self.type.get_declaration())),
         )
 
     def _begin(self):
@@ -137,9 +143,7 @@ class TypeNode(ClangNode):
 class PointerType(TypeNode):
     def __init__(self, name: str, type: cindex.Type):
         super().__init__(name, type)
-        self.add_property(
-            PointeeProperty(Binding(lambda: self.type.get_pointee()))
-        )
+        self.add_property(PointeeProperty(Binding(lambda: self.type.get_pointee())))
 
 
 class CursorNode(ClangNode):

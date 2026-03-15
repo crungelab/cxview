@@ -127,6 +127,11 @@ class TypeProperty(BaseTypeProperty):
         super().__init__("type", binding)
 
 
+class CanonicalTypeProperty(BaseTypeProperty):
+    def __init__(self, binding: Binding):
+        super().__init__("canonical", binding)
+
+
 class PointeeProperty(BaseTypeProperty):
     def __init__(self, binding: Binding):
         super().__init__("pointee", binding)
