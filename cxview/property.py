@@ -5,7 +5,7 @@ from loguru import logger
 from crunge import imgui
 from crunge.engine.imgui.widget import Widget
 
-from .pin import Pin, Input, Output, TogglePin
+from .pin import Pin, Input, Output, ExpandablePin
 from .wire import Wire
 from .session import Session
 from .graph import Graph
@@ -52,12 +52,12 @@ class PropertyWidget(Widget):
 class ExpandableProperty(PropertyWidget):
     def __init__(self, name: str, binding: Binding):
         super().__init__(name, binding)
-        self.output_pin = TogglePin(name, self.toggle)
+        self.output_pin = ExpandablePin(name, self.toggle)
 
     def on_added(self):
         logger.debug(f"Adding output pin {self.output_pin} to node {self.node}")
         self.node.add_pin(self.output_pin)
-    
+
     def draw(self):
         self.output_pin.begin()
         self.output_pin.end()
@@ -72,15 +72,22 @@ class ExpandableProperty(PropertyWidget):
         pass
 
     def collapse(self):
-        wires:list[Wire] = list(self.output_pin.wires)
-        for wire in wires:
-            logger.debug(f"wire {wire}")
-            logger.debug(f"Hiding child node {wire.input.node.id} of parent {self.id}")
-            child_node = wire.input.node
-            self.graph.remove_node(child_node)
-            self.graph.remove_wire(wire)
+        wires: list[Wire] = list(self.output_pin.wires)
 
-        self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
+        def action():
+            for wire in wires:
+                logger.debug(f"wire {wire}")
+                logger.debug(
+                    f"Hiding child node {wire.input.node.id} of parent {self.id}"
+                )
+                child_node = wire.input.node
+                child_node.collapse()
+                self.graph.remove_node(child_node)
+                self.graph.remove_wire(wire)
+
+            self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
+
+        self.queue_action(action)
 
 
 class TypeProperty(ExpandableProperty):
@@ -99,6 +106,7 @@ class TypeProperty(ExpandableProperty):
             self.graph.add_wire(Wire(self.output_pin, node.get_pin("parent")))
             self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
 
+
 class ChildrenProperty(ExpandableProperty):
     def __init__(self, binding: Binding):
         super().__init__("children", binding)
@@ -109,9 +117,7 @@ class ChildrenProperty(ExpandableProperty):
             if node is not None:
                 self.graph_layout.place_node_right_of(self.node, node)
                 self.graph.add_node(node)
-                self.graph.add_wire(
-                    Wire(self.output_pin, node.get_pin("parent"))
-                )
+                self.graph.add_wire(Wire(self.output_pin, node.get_pin("parent")))
 
         def action():
             children = []
@@ -120,8 +126,7 @@ class ChildrenProperty(ExpandableProperty):
                     f"Found child node {wire.input.node.id} for parent {self.id}"
                 )
                 children.append(wire.input.node)
-            #self.graph_layout.place_children_right(self.node, children)
+            # self.graph_layout.place_children_right(self.node, children)
             self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
-
 
         self.queue_action(action)

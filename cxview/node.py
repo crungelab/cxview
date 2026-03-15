@@ -82,6 +82,14 @@ class Node(Widget):
     def get_pin(self, name: str) -> Pin:
         return self.pin_map[name]
 
+    def expand(self):
+        for pin in self.outputs:
+            pin.expand()
+
+    def collapse(self):
+        for pin in self.outputs:
+            pin.collapse()
+
     def update(self, delta_time: float):
         pass
 
@@ -94,10 +102,6 @@ class Node(Widget):
         imnodes.end_node_title_bar()
 
     def _end(self):
-        """
-        for pin in self.outputs:
-            pin.draw()
-        """
         imnodes.end_node()
 
     def queue_action(self, action: Callable[[], None]):
