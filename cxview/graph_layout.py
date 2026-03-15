@@ -9,6 +9,12 @@ from .wire import Wire
 
 
 class GraphLayout:
+    def __init__(self):
+        self.is_dirty = False
+
+    def mark_dirty(self):
+        self.is_dirty = True
+
     def place_node_right_of(
         self, anchor: Node, node: Node, gap_x: float = 40.0, gap_y: float = 0.0
     ):
@@ -52,11 +58,14 @@ class GraphLayout:
         wires: list[Wire],
         start_x: float = 100.0,
         start_y: float = 100.0,
-        layer_gap_x: float = 120.0,
+        #layer_gap_x: float = 120.0,
+        layer_gap_x: float = 60.0,
         node_gap_y: float = 30.0,
     ):
         if not nodes:
             return
+        
+        self.is_dirty = False
 
         node_set = set(nodes)
 
@@ -192,5 +201,5 @@ class GraphLayout:
         for node in nodes:
             x = layer_x[layer_of[node]]
             y = node_y[node]
-            logger.debug(f"Placing node {node.id} at ({x:.1f}, {y:.1f})")
+            #logger.debug(f"Placing node {node.id} at ({x:.1f}, {y:.1f})")
             node.position = (x, y)

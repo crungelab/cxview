@@ -34,6 +34,9 @@ class Session:
             action()
 
     def is_mappable(self, cursor: cindex.Cursor):
+        if cursor.location.file is None:
+            return False
+
         return self.path == Path(cursor.location.file.name)
 
     def create_cursor_node(self, cursor: cindex.Cursor):

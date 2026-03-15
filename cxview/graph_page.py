@@ -19,6 +19,8 @@ class GraphPage(Page):
     def _create(self):
         super()._create()
         self.graph_dock = Dock("Graph", [self.graph])
+        # RuntimeError: Child already has a owner, it must be removed first.
+        #self.graph_dock.add_child(self.graph)
         self.gui.add_child(self.graph_dock)
 
     @property
@@ -38,3 +40,5 @@ class GraphPage(Page):
 
     def update(self, delta_time):
         self.session.update(delta_time)
+        #self.graph.update(delta_time)
+

@@ -45,10 +45,12 @@ class Graph(Widget):
 
     def add_node(self, node: "Node"):
         self.add_child(node)
+        self.graph_layout.mark_dirty()
         return node
 
     def remove_node(self, node: "Node"):
         self.remove_child(node)
+        self.graph_layout.mark_dirty()
 
     def add_wire(self, wire: Wire):
         self.wires.append(wire)
@@ -100,11 +102,6 @@ class Graph(Widget):
             output = self.pin_map[result[1]]
             logger.debug(f"dropped: {output}")
             output.toggle()
-            """
-            def action():
-                output.toggle()
-            self.session.queue_action(action)
-            """
 
         """
         if (result := imnodes.is_link_created(0, 0))[0]:
@@ -121,3 +118,15 @@ class Graph(Widget):
             wire = self.wire_map[result[1]]
             logger.debug(f"destroyed: {wire}")
             self.disconnect(wire)
+
+        if self.graph_layout.is_dirty:
+            logger.debug("Updating graph layout")
+            self.graph_layout.layout_dag(list(self.nodes), list(self.wires))
+
+    """
+    # This bombs
+    def update(self, delta_time: float):
+        logger.debug("Updating graph layout")
+        if self.graph_layout.is_dirty:
+            self.graph_layout.layout_dag(list(self.nodes), list(self.wires))
+    """

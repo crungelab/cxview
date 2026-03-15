@@ -36,14 +36,6 @@ class Pin:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.end()
 
-    @contextmanager
-    def drawing(self):
-        self.begin()
-        try:
-            yield
-        finally:
-            self.end()
-
     def begin(self):
         pass
 
@@ -103,7 +95,9 @@ class ExpandablePin(Output):
     def collapse(self):
         self.expanded = False
 
+    """
     def begin(self):
         super().begin()
         if imgui.radio_button(f"{self.name}##{self.id}", self.expanded):
             self.toggle()
+    """

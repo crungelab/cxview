@@ -11,7 +11,7 @@ from crunge.engine.imgui.widget import Widget
 from .pin import Pin, Input, Output
 from .session import Session
 from .graph import Graph
-from .property import Binding, PropertyWidget, TypeProperty, ChildrenProperty
+from .property import Binding, PropertyWidget, TypeProperty, DeclarationProperty, ChildrenProperty
 
 
 class Node(Widget):
@@ -96,7 +96,6 @@ class Node(Widget):
     def _begin(self):
         imnodes.begin_node(self.id)
         imnodes.begin_node_title_bar()
-        # with self.inputs[0].drawing():
         with self.inputs[0]:
             imgui.text(self.title)
         imnodes.end_node_title_bar()
@@ -119,6 +118,7 @@ class TypeNode(ClangNode):
     def __init__(self, name: str, type: cindex.Type):
         super().__init__(name)
         self.type = type
+        self.add_property(DeclarationProperty(Binding(lambda: self.type.get_declaration())))
 
     def _begin(self):
         super()._begin()

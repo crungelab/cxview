@@ -97,6 +97,8 @@ class ExpandableProperty(PropertyWidget):
                 self.graph.remove_node(child_node)
                 self.graph.remove_wire(wire)
 
+            #self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
+
         self.queue_action(action)
 
     def on_create_node(self, node: "Node"):
@@ -106,6 +108,7 @@ class ExpandableProperty(PropertyWidget):
         self.graph_layout.place_node_right_of(self.node, node)
         self.graph.add_node(node)
         self.graph.add_wire(Wire(self.output_pin, node.get_pin("parent")))
+        #self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
 
 
 class TypeProperty(ExpandableProperty):
@@ -119,7 +122,13 @@ class TypeProperty(ExpandableProperty):
 
         node = self.session.create_type_node(typ)
         self.on_create_node(node)
-
+        '''
+        if node is not None:
+            self.graph_layout.place_node_right_of(self.node, node)
+            self.graph.add_node(node)
+            self.graph.add_wire(Wire(self.output_pin, node.get_pin("parent")))
+            self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
+        '''
 
 class DeclarationProperty(ExpandableProperty):
     def __init__(self, binding: Binding):
@@ -132,13 +141,40 @@ class DeclarationProperty(ExpandableProperty):
 
         node = self.session.create_cursor_node(decl)
         self.on_create_node(node)
-
+        '''
+        if node is not None:
+            self.graph_layout.place_node_right_of(self.node, node)
+            self.graph.add_node(node)
+            self.graph.add_wire(Wire(self.output_pin, node.get_pin("parent")))
+            self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
+        '''
 
 class ChildrenProperty(ExpandableProperty):
     def __init__(self, binding: Binding):
         super().__init__("children", binding)
 
+    #TODO: This is calling layout_dag multiple times, which might be inefficient
     def expand(self):
         for cursor in self.value:
             node = self.session.create_cursor_node(cursor)
             self.on_create_node(node)
+
+    '''
+    def expand(self):
+        for cursor in self.value:
+            node = self.session.create_cursor_node(cursor)
+            if node is not None:
+                self.graph_layout.place_node_right_of(self.node, node)
+                self.graph.add_node(node)
+                self.graph.add_wire(Wire(self.output_pin, node.get_pin("parent")))
+        def action():
+            children = []
+            for wire in self.output_pin.wires:
+                logger.debug(
+                    f"Found child node {wire.input.node.id} for parent {self.id}"
+                )
+                children.append(wire.input.node)
+            self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
+
+        self.queue_action(action)
+    '''
