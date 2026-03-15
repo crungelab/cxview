@@ -7,8 +7,11 @@ from crunge import imnodes
 from .node import Node
 from .wire import Wire
 
+
 class GraphLayout:
-    def place_node_right_of(self, anchor: Node, node: Node, gap_x: float = 40.0, gap_y: float = 0.0):
+    def place_node_right_of(
+        self, anchor: Node, node: Node, gap_x: float = 40.0, gap_y: float = 0.0
+    ):
         x, y = anchor.position
         width, height = anchor.size
         node.position = (x + width + gap_x, y + gap_y)
@@ -43,38 +46,6 @@ class GraphLayout:
             child.position = (x, current_y)
             current_y += child_height + gap_y
 
-    """
-    def place_children_right(
-        self,
-        anchor: Node,
-        children: list[Node],
-        gap_x: float = 40.0,
-        gap_y: float = 20.0,
-    ):
-        if not children:
-            return
-
-        parent_x, parent_y = imnodes.get_node_grid_space_pos(anchor.id)
-        parent_width, parent_height = imnodes.get_node_dimensions(anchor.id)
-
-        child_sizes: list[tuple[Node, float, float]] = []
-        for child in children:
-            child_width, child_height = imnodes.get_node_dimensions(child.id)
-            child_sizes.append((child, child_width, child_height))
-
-        total_height = sum(height for _, _, height in child_sizes)
-        total_height += gap_y * (len(child_sizes) - 1)
-
-        start_y = parent_y + (parent_height - total_height) / 2.0
-        x = parent_x + parent_width + gap_x
-
-        current_y = start_y
-        for child, child_width, child_height in child_sizes:
-            logger.debug(f"Placing child node {child.id} at ({x}, {current_y})")
-            imnodes.set_node_grid_space_pos(child.id, (x, current_y))
-            current_y += child_height + gap_y
-    """
-
     def layout_dag(
         self,
         nodes: list[Node],
@@ -87,70 +58,139 @@ class GraphLayout:
         if not nodes:
             return
 
-        # Build adjacency and indegree
+        node_set = set(nodes)
+
+        # ------------------------------------------------------------------ #
+        # Build adjacency, filtering stale wires.
+        # ------------------------------------------------------------------ #
         children_map: dict[Node, list[Node]] = defaultdict(list)
         indegree: dict[Node, int] = {node: 0 for node in nodes}
 
         for wire in wires:
             src = wire.output.node
             dst = wire.input.node
+            if src not in node_set or dst not in node_set:
+                continue
             children_map[src].append(dst)
             indegree[dst] += 1
 
-        # Roots = nodes with no incoming edges
+        # Stable child order within every parent
+        for node in children_map:
+            children_map[node].sort(key=lambda n: n.id)
+
         roots = [node for node in nodes if indegree[node] == 0]
         if not roots:
-            # fallback if graph has cycles or weird structure
             roots = [nodes[0]]
+        roots.sort(key=lambda n: n.id)
 
-        # Assign layers using longest-path style BFS
+        # ------------------------------------------------------------------ #
+        # Layer assignment: longest-path BFS.
+        # ------------------------------------------------------------------ #
         layer_of: dict[Node, int] = {node: 0 for node in nodes}
-        queue = deque(roots)
+        remaining_indegree: dict[Node, int] = dict(indegree)
+        queue: deque[Node] = deque(roots)
 
         while queue:
             node = queue.popleft()
-            current_layer = layer_of[node]
-
             for child in children_map[node]:
-                next_layer = current_layer + 1
-                if next_layer > layer_of[child]:
-                    layer_of[child] = next_layer
-                indegree[child] -= 1
-                if indegree[child] == 0:
+                if layer_of[node] + 1 > layer_of[child]:
+                    layer_of[child] = layer_of[node] + 1
+                remaining_indegree[child] -= 1
+                if remaining_indegree[child] == 0:
                     queue.append(child)
 
-        # Group nodes by layer
+        # ------------------------------------------------------------------ #
+        # Subtree height: bottom-up accumulation.
+        #
+        # The "subtree height" of a node is the total vertical space its
+        # entire descendant block needs, including gaps between siblings.
+        # Leaf nodes occupy exactly their own height.  An internal node
+        # occupies max(its own height, sum-of-children-subtree-heights +
+        # gaps), because the children must fit beside it without overlap.
+        # ------------------------------------------------------------------ #
+        subtree_h: dict[Node, float] = {}
+
+        def compute_subtree_h(node: Node) -> float:
+            if node in subtree_h:
+                return subtree_h[node]
+            children = children_map.get(node, [])
+            if not children:
+                result = node.height
+            else:
+                children_total = sum(compute_subtree_h(c) for c in children)
+                children_total += node_gap_y * (len(children) - 1)
+                result = max(node.height, children_total)
+            subtree_h[node] = result
+            return result
+
+        for root in roots:
+            compute_subtree_h(root)
+        # Handle any nodes disconnected from all roots
+        for node in nodes:
+            if node not in subtree_h:
+                compute_subtree_h(node)
+
+        # ------------------------------------------------------------------ #
+        # X positions per layer.
+        # ------------------------------------------------------------------ #
         layers: dict[int, list[Node]] = defaultdict(list)
-        for node, layer in layer_of.items():
-            layers[layer].append(node)
+        for node in nodes:
+            layers[layer_of[node]].append(node)
 
-        # Sort nodes within each layer for stable results
-        for layer_nodes in layers.values():
-            layer_nodes.sort(key=lambda n: n.id)
-
-        # Compute x position per layer
         sorted_layer_ids = sorted(layers.keys())
         layer_x: dict[int, float] = {}
         current_x = start_x
-
         for layer in sorted_layer_ids:
-            layer_nodes = layers[layer]
-            max_width = max(node.width for node in layer_nodes)
+            max_width = max(node.width for node in layers[layer])
             layer_x[layer] = current_x
             current_x += max_width + layer_gap_x
 
-        # Place nodes stacked vertically in each layer
-        for layer in sorted_layer_ids:
-            layer_nodes = layers[layer]
+        # ------------------------------------------------------------------ #
+        # Y positions: top-down recursive placement.
+        #
+        # Each node is given a "slot" whose height equals its subtree_h.
+        # The node itself is centered within that slot, and its children's
+        # slots are stacked contiguously inside it.  Because slot sizes are
+        # computed bottom-up from actual subtree heights, siblings at every
+        # layer are guaranteed non-overlapping.
+        # ------------------------------------------------------------------ #
+        node_y: dict[Node, float] = {}
 
-            total_height = (
-                sum(node.height for node in layer_nodes)
-                + node_gap_y * (len(layer_nodes) - 1)
-            )
+        def place(node: Node, slot_top: float):
+            slot_h = subtree_h[node]
+            # Center this node vertically within its slot
+            node_y[node] = slot_top + (slot_h - node.height) / 2.0
 
-            current_y = start_y
-            x = layer_x[layer]
+            children = children_map.get(node, [])
+            if not children:
+                return
 
-            for node in layer_nodes:
-                node.position = (x, current_y)
+            children_total = sum(subtree_h[c] for c in children)
+            children_total += node_gap_y * (len(children) - 1)
+
+            # Stack children's slots, themselves centered in the parent slot
+            child_slot_top = slot_top + (slot_h - children_total) / 2.0
+            for child in children:
+                place(child, child_slot_top)
+                child_slot_top += subtree_h[child] + node_gap_y
+
+        # Place each root, stacking their subtree slots from start_y
+        current_y = start_y
+        for root in roots:
+            place(root, current_y)
+            current_y += subtree_h[root] + node_gap_y
+
+        # Place any nodes unreachable from roots (isolated / cyclic fallback)
+        for node in nodes:
+            if node not in node_y:
+                node_y[node] = current_y
                 current_y += node.height + node_gap_y
+
+        # ------------------------------------------------------------------ #
+        # Apply positions.
+        # ------------------------------------------------------------------ #
+        for node in nodes:
+            x = layer_x[layer_of[node]]
+            y = node_y[node]
+            logger.debug(f"Placing node {node.id} at ({x:.1f}, {y:.1f})")
+            node.position = (x, y)
