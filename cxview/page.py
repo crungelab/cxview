@@ -29,7 +29,7 @@ class Page(ImGuiView):
 
         if self.window.menubar_location == MenubarLocation.WINDOW:
             self.draw_mainmenu()
-        self.draw_navbar()
+        #self.draw_navbar()
 
         if self.fullwidth:
             x = self.window.width - (512 + 256) - 32

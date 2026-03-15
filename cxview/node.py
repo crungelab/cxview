@@ -2,6 +2,7 @@ from typing import Callable
 
 from loguru import logger
 from clang import cindex
+import glm
 
 from crunge import imgui
 from crunge import imnodes
@@ -38,6 +39,28 @@ class Node(Widget):
     @property
     def graph(self):
         return Graph.get_current()
+
+    @property
+    def position(self):
+        return imnodes.get_node_grid_space_pos(self.id)
+
+    @position.setter
+    def position(self, value):
+        imnodes.set_node_grid_space_pos(self.id, value)
+
+    @property
+    def size(self):
+        return imnodes.get_node_dimensions(self.id)
+
+    @property
+    def width(self, default=180.0):
+        w, _ = self.size
+        return w if w > 0 else default
+
+    @property
+    def height(self, default=100.0):
+        _, h = self.size
+        return h if h > 0 else default
 
     def reset(self):
         pass

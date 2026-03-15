@@ -53,8 +53,6 @@ class ExpandableProperty(PropertyWidget):
     def __init__(self, name: str, binding: Binding):
         super().__init__(name, binding)
         self.output_pin = TogglePin(name, self.toggle)
-        self.output_pin.property = self
-        #self.graph.add_pin(self.output_pin)
 
     def on_added(self):
         logger.debug(f"Adding output pin {self.output_pin} to node {self.node}")
@@ -82,6 +80,8 @@ class ExpandableProperty(PropertyWidget):
             self.graph.remove_node(child_node)
             self.graph.remove_wire(wire)
 
+        self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
+
 
 class TypeProperty(ExpandableProperty):
     def __init__(self, binding: Binding):
@@ -97,6 +97,7 @@ class TypeProperty(ExpandableProperty):
             self.graph_layout.place_node_right_of(self.node, node)
             self.graph.add_node(node)
             self.graph.add_wire(Wire(self.output_pin, node.get_pin("parent")))
+            self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
 
 class ChildrenProperty(ExpandableProperty):
     def __init__(self, binding: Binding):
@@ -119,7 +120,8 @@ class ChildrenProperty(ExpandableProperty):
                     f"Found child node {wire.input.node.id} for parent {self.id}"
                 )
                 children.append(wire.input.node)
-            self.graph_layout.place_children_right(self.node, children)
+            #self.graph_layout.place_children_right(self.node, children)
+            self.graph_layout.layout_dag(list(self.graph.nodes), list(self.graph.wires))
 
 
         self.queue_action(action)

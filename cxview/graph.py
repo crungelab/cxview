@@ -90,15 +90,13 @@ class Graph(Widget):
             pass
 
         cb_data = True
-        # imnodes.mini_map(0.1, imnodes.MiniMapLocation.TOP_LEFT, cb, cb_data)
         imnodes.mini_map(0.1, imnodes.MiniMapLocation.TOP_RIGHT, cb, cb_data)
-        # imnodes.mini_map()
-        # imnodes.end_node_editor()
 
     def _end(self):
         imnodes.end_node_editor()
 
         if (result := imnodes.is_link_dropped(0, False))[0]:
+            logger.debug(f"result: {result}")
             output = self.pin_map[result[1]]
             logger.debug(f"dropped: {output}")
             output.toggle()
@@ -108,15 +106,18 @@ class Graph(Widget):
             self.session.queue_action(action)
             """
 
+        """
         if (result := imnodes.is_link_created(0, 0))[0]:
-            logger.debug(result)
+            logger.debug(f"result: {result}")
             output = self.pin_map[result[1]]
             input = self.pin_map[result[2]]
             logger.debug(f"output:  {output}")
             logger.debug(f"input:  {input}")
             self.connect(output, input)
+        """
 
         if (result := imnodes.is_link_destroyed(0))[0]:
+            logger.debug(f"result: {result}")
             wire = self.wire_map[result[1]]
             logger.debug(f"destroyed: {wire}")
             self.disconnect(wire)

@@ -11,7 +11,6 @@ class Pin:
         Pin.id_counter += 1
         self.name = name
         self.node = None
-        self.property = None
         self.wires = []
         self.x = 0
         self.y = 0
@@ -78,6 +77,7 @@ class Output(Pin):
     def end(self):
         imnodes.end_output_attribute()
 
+
 class TogglePin(Output):
     def __init__(self, name, action):
         super().__init__(name)
@@ -93,6 +93,3 @@ class TogglePin(Output):
         # imgui.text(self.name)
         if imgui.radio_button(f"{self.name}##{self.id}", self.value):
             self.toggle()
-
-    def end(self):
-        super().end()
