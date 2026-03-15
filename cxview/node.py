@@ -11,7 +11,14 @@ from crunge.engine.imgui.widget import Widget
 from .pin import Pin, Input, Output
 from .session import Session
 from .graph import Graph
-from .property import Binding, PropertyWidget, TypeProperty, DeclarationProperty, ChildrenProperty
+from .property import (
+    Binding,
+    PropertyWidget,
+    TypeProperty,
+    PointeeProperty,
+    DeclarationProperty,
+    ChildrenProperty,
+)
 
 
 class Node(Widget):
@@ -118,11 +125,21 @@ class TypeNode(ClangNode):
     def __init__(self, name: str, type: cindex.Type):
         super().__init__(name)
         self.type = type
-        self.add_property(DeclarationProperty(Binding(lambda: self.type.get_declaration())))
+        self.add_property(
+            DeclarationProperty(Binding(lambda: self.type.get_declaration()))
+        )
 
     def _begin(self):
         super()._begin()
         imgui.text(str(self.type.kind))
+
+
+class PointerType(TypeNode):
+    def __init__(self, name: str, type: cindex.Type):
+        super().__init__(name, type)
+        self.add_property(
+            PointeeProperty(Binding(lambda: self.type.get_pointee()))
+        )
 
 
 class CursorNode(ClangNode):

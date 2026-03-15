@@ -60,6 +60,16 @@ class Session:
                 return None
 
     def create_type_node(self, type: cindex.Type):
+        from .node import TypeNode, PointerType
+
+        match type.kind:
+            case cindex.TypeKind.POINTER:
+                return PointerType(type.spelling, type)
+            case _:
+                return TypeNode(type.spelling, type)
+
+    '''
+    def create_type_node(self, type: cindex.Type):
         from .node import TypeNode
         return TypeNode(type.spelling, type)
-
+    '''

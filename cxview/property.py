@@ -63,6 +63,7 @@ class ExpandableProperty(PropertyWidget):
         )
         logger.debug(f"Adding output pin {self.output_pin} to node {self.node}")
         self.node.add_pin(self.output_pin)
+        logger.debug(f"v={self.value}")
 
     def draw(self):
         if self.value:
@@ -108,9 +109,9 @@ class ExpandableProperty(PropertyWidget):
         self.graph.add_wire(Wire(self.output_pin, node.get_pin("parent")))
 
 
-class TypeProperty(ExpandableProperty):
-    def __init__(self, binding: Binding):
-        super().__init__("type", binding)
+class BaseTypeProperty(ExpandableProperty):
+    def __init__(self, name: str, binding: Binding):
+        super().__init__(name, binding)
 
     def expand(self):
         typ = self.value
@@ -121,17 +122,32 @@ class TypeProperty(ExpandableProperty):
         self.on_create_node(node)
 
 
-class DeclarationProperty(ExpandableProperty):
+class TypeProperty(BaseTypeProperty):
     def __init__(self, binding: Binding):
-        super().__init__("declaration", binding)
+        super().__init__("type", binding)
+
+
+class PointeeProperty(BaseTypeProperty):
+    def __init__(self, binding: Binding):
+        super().__init__("pointee", binding)
+
+
+class CursorProperty(ExpandableProperty):
+    def __init__(self, name: str, binding: Binding):
+        super().__init__(name, binding)
 
     def expand(self):
-        decl = self.value
-        if decl is None:
+        cursor = self.value
+        if cursor is None:
             return
 
-        node = self.session.create_cursor_node(decl)
+        node = self.session.create_cursor_node(cursor)
         self.on_create_node(node)
+
+
+class DeclarationProperty(CursorProperty):
+    def __init__(self, binding: Binding):
+        super().__init__("declaration", binding)
 
 
 class ChildrenProperty(ExpandableProperty):
